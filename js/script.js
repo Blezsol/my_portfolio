@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Get DOM elements
+    // ==================== DOM ELEMENTS ====================
     const sidebar = document.getElementById('sidebar');
     const content = document.getElementById('content');
     const toggleBtn = document.getElementById('toggle-btn');
@@ -7,38 +7,98 @@ document.addEventListener('DOMContentLoaded', function() {
     const navLinks = document.querySelectorAll('.nav-link');
     const sections = document.querySelectorAll('.section');
     
-    // Check screen width and set initial state
+    // ==================== SIDEBAR OVERLAY FOR MOBILE ====================
+    let overlay = null;
+    
+    function createOverlay() {
+        if (overlay) return;
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+        
+        overlay.addEventListener('click', function() {
+            sidebar.classList.remove('mobile-active');
+            overlay.classList.remove('active');
+            // Also remove any inline styles
+            if (window.innerWidth <= 768) {
+                document.body.style.overflow = '';
+            }
+        });
+    }
+    
+    function removeOverlay() {
+        if (overlay && overlay.parentNode) {
+            overlay.remove();
+            overlay = null;
+        }
+    }
+    
+    // ==================== CHECK SCREEN SIZE ====================
     function checkScreenSize() {
         if (window.innerWidth <= 768) {
             // Mobile view - sidebar hidden by default
             sidebar.classList.remove('collapsed');
+            sidebar.classList.remove('mobile-active');
             content.classList.remove('expanded');
-        } else {
-            // Desktop view - sidebar collapsed to icons by default
+            if (overlay) overlay.classList.remove('active');
+            createOverlay();
+        } else if (window.innerWidth <= 1024) {
+            // Tablet view - collapsed by default with hover expand
             sidebar.classList.add('collapsed');
             content.classList.add('expanded');
+            removeOverlay();
+        } else {
+            // Desktop view - collapsed to icons by default
+            sidebar.classList.add('collapsed');
+            content.classList.add('expanded');
+            removeOverlay();
         }
     }
     
-    // Run on page load
-    checkScreenSize();
-    
-    // Toggle sidebar collapse/expand
+    // ==================== TOGGLE SIDEBAR COLLAPSE ====================
     if (toggleBtn) {
-        toggleBtn.addEventListener('click', function() {
-            sidebar.classList.toggle('collapsed');
-            content.classList.toggle('expanded');
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (window.innerWidth > 768) {
+                sidebar.classList.toggle('collapsed');
+                content.classList.toggle('expanded');
+            }
         });
     }
     
-    // Mobile toggle button
+    // ==================== MOBILE TOGGLE BUTTON ====================
     if (mobileToggle) {
-        mobileToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('mobile-active');
+        mobileToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (window.innerWidth <= 768) {
+                createOverlay();
+                sidebar.classList.toggle('mobile-active');
+                
+                if (sidebar.classList.contains('mobile-active')) {
+                    overlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    overlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
         });
     }
     
-    // Navigation click handler
+    // Close sidebar when clicking on a link (mobile)
+    navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('mobile-active');
+                if (overlay) overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    });
+    
+    // ==================== NAVIGATION HANDLER ====================
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -55,12 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 sections.forEach(section => section.classList.remove('active'));
                 targetSection.classList.add('active');
                 
-                // Close sidebar on mobile after clicking a link
-                if (window.innerWidth <= 768) {
-                    sidebar.classList.remove('mobile-active');
-                }
-                
-                // Scroll to the top of the section
+                // Scroll to top
                 window.scrollTo({
                     top: 0,
                     behavior: 'smooth'
@@ -69,105 +124,53 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // ==================== FIX: MAKE "VIEW MY WORK" BUTTON WORK ====================
+    // ==================== HOME BUTTON HANDLERS ====================
     const viewWorkBtn = document.querySelector('.btn.primary[href="#portfolio"]');
     if (viewWorkBtn) {
         viewWorkBtn.addEventListener('click', function(e) {
             e.preventDefault();
             const targetSection = document.querySelector('#portfolio');
             if (targetSection) {
-                // Update active navigation link
                 navLinks.forEach(navLink => navLink.classList.remove('active'));
                 const portfolioNavLink = document.querySelector('.nav-link[href="#portfolio"]');
                 if (portfolioNavLink) portfolioNavLink.classList.add('active');
                 
-                // Hide all sections and show portfolio
                 sections.forEach(section => section.classList.remove('active'));
                 targetSection.classList.add('active');
-                
-                // Close sidebar on mobile
-                if (window.innerWidth <= 768) {
-                    sidebar.classList.remove('mobile-active');
-                }
-                
-                // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         });
     }
     
-    // ==================== FIX: MAKE "CONTACT ME" BUTTON WORK ====================
     const contactMeBtn = document.querySelector('.btn.secondary[href="#contact"]');
     if (contactMeBtn) {
         contactMeBtn.addEventListener('click', function(e) {
             e.preventDefault();
             const targetSection = document.querySelector('#contact');
             if (targetSection) {
-                // Update active navigation link
                 navLinks.forEach(navLink => navLink.classList.remove('active'));
                 const contactNavLink = document.querySelector('.nav-link[href="#contact"]');
                 if (contactNavLink) contactNavLink.classList.add('active');
                 
-                // Hide all sections and show contact
                 sections.forEach(section => section.classList.remove('active'));
                 targetSection.classList.add('active');
-                
-                // Close sidebar on mobile
-                if (window.innerWidth <= 768) {
-                    sidebar.classList.remove('mobile-active');
-                }
-                
-                // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         });
     }
     
-    // ==================== ALSO HANDLE BUTTONS INSIDE HOME CONTENT ====================
-    // For any buttons that might be dynamically added or have different selectors
-    const homeActionButtons = document.querySelectorAll('.action-buttons .btn');
-    homeActionButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const href = this.getAttribute('href');
-            if (href && (href === '#portfolio' || href === '#contact')) {
-                const targetSection = document.querySelector(href);
-                if (targetSection) {
-                    // Update active navigation link
-                    navLinks.forEach(navLink => navLink.classList.remove('active'));
-                    const targetNavLink = document.querySelector(`.nav-link[href="${href}"]`);
-                    if (targetNavLink) targetNavLink.classList.add('active');
-                    
-                    // Hide all sections and show target
-                    sections.forEach(section => section.classList.remove('active'));
-                    targetSection.classList.add('active');
-                    
-                    // Close sidebar on mobile
-                    if (window.innerWidth <= 768) {
-                        sidebar.classList.remove('mobile-active');
-                    }
-                    
-                    // Scroll to top
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-            }
-        });
-    });
-    
-    // Portfolio filtering
+    // ==================== PORTFOLIO FILTERING ====================
     const filterButtons = document.querySelectorAll('.filter-btn');
     const portfolioItems = document.querySelectorAll('.portfolio-item');
     
     if (filterButtons.length > 0 && portfolioItems.length > 0) {
         filterButtons.forEach(button => {
             button.addEventListener('click', function() {
-                // Update active filter button
                 filterButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
                 
                 const filterValue = this.getAttribute('data-filter');
                 
-                // Filter portfolio items with animation
                 portfolioItems.forEach(item => {
                     if (filterValue === 'all' || item.getAttribute('data-category') === filterValue) {
                         item.style.display = 'block';
@@ -180,41 +183,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Testimonial slider
+    // ==================== TESTIMONIAL SLIDER ====================
     const testimonials = document.querySelectorAll('.testimonial');
     const testimonialNav = document.querySelectorAll('.testimonial-nav button');
     let currentTestimonial = 0;
     
     if (testimonials.length > 0 && testimonialNav.length > 0) {
-        testimonialNav.forEach(button => {
-            button.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                currentTestimonial = index;
-                
-                // Update active testimonial with fade effect
-                testimonials.forEach(testimonial => {
-                    testimonial.classList.remove('active');
-                    testimonial.style.opacity = '0';
-                });
-                testimonials[index].classList.add('active');
-                setTimeout(() => {
-                    testimonials[index].style.opacity = '1';
-                }, 50);
-                
-                // Update active nav button
-                testimonialNav.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-            });
+        function showTestimonial(index) {
+            testimonials.forEach(t => t.classList.remove('active'));
+            testimonialNav.forEach(btn => btn.classList.remove('active'));
+            testimonials[index].classList.add('active');
+            testimonialNav[index].classList.add('active');
+            currentTestimonial = index;
+        }
+        
+        testimonialNav.forEach((button, index) => {
+            button.addEventListener('click', () => showTestimonial(index));
         });
         
-        // Auto-rotate testimonials every 8 seconds
+        // Auto-rotate every 8 seconds
         setInterval(() => {
-            currentTestimonial = (currentTestimonial + 1) % testimonials.length;
-            testimonialNav[currentTestimonial].click();
+            let next = (currentTestimonial + 1) % testimonials.length;
+            showTestimonial(next);
         }, 8000);
     }
     
-    // Animate skill bars when they come into view
+    // ==================== SKILL BARS ANIMATION ====================
     const skillBars = document.querySelectorAll('.skill-progress');
     
     if (skillBars.length > 0) {
@@ -234,13 +228,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // ==================== CONTACT FORM HANDLER WITH BACKEND ====================
+    // ==================== CONTACT FORM - FIXED FOR LIVE SERVER ====================
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Get form data
             const formData = {
                 name: document.getElementById('name').value.trim(),
                 email: document.getElementById('email').value.trim(),
@@ -254,22 +247,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Email validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formData.email)) {
                 showNotification('Please enter a valid email address', 'error');
                 return;
             }
             
-            // Show loading state
             const submitBtn = contactForm.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
             submitBtn.disabled = true;
             
             try {
-                // Send to backend
-                const response = await fetch('http://localhost:5000/api/contact', {
+                // ✅ FIXED: Use relative path - works on both localhost and live server
+                const response = await fetch('/api/contact', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -280,21 +271,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
-                    // Success
-                    showNotification(result.message, 'success');
+                    showNotification(result.message || 'Message sent successfully!', 'success');
                     contactForm.reset();
-                    
-                    // Optional: Send to Google Sheets or email backup
-                    console.log('Message sent successfully!');
                 } else {
-                    // Error from server
                     showNotification(result.message || 'Failed to send message. Please try again.', 'error');
                 }
             } catch (error) {
                 console.error('Contact form error:', error);
-                showNotification('Network error. Please make sure the server is running at localhost:5000', 'error');
+                showNotification('Network error. Please try again.', 'error');
             } finally {
-                // Reset button
                 submitBtn.innerHTML = originalBtnText;
                 submitBtn.disabled = false;
             }
@@ -307,7 +292,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const existingNotifications = document.querySelectorAll('.notification');
         existingNotifications.forEach(notification => notification.remove());
         
-        // Create notification element
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.style.cssText = `
@@ -330,7 +314,6 @@ document.addEventListener('DOMContentLoaded', function() {
             backdrop-filter: blur(10px);
         `;
         
-        // Set colors based on type
         const colors = {
             success: 'linear-gradient(135deg, #4CAF50, #45a049)',
             error: 'linear-gradient(135deg, #f44336, #d32f2f)',
@@ -339,7 +322,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         notification.style.background = colors[type] || colors.info;
         
-        // Add icon
         const iconMap = {
             success: 'fa-check-circle',
             error: 'fa-exclamation-circle',
@@ -351,13 +333,11 @@ document.addEventListener('DOMContentLoaded', function() {
         icon.style.fontSize = '20px';
         notification.appendChild(icon);
         
-        // Add message
         const textSpan = document.createElement('span');
         textSpan.textContent = message;
         textSpan.style.flex = '1';
         notification.appendChild(textSpan);
         
-        // Add progress bar
         const progressBar = document.createElement('div');
         progressBar.style.cssText = `
             position: absolute;
@@ -371,7 +351,6 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         notification.appendChild(progressBar);
         
-        // Add close button
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '&times;';
         closeBtn.style.cssText = `
@@ -394,10 +373,8 @@ document.addEventListener('DOMContentLoaded', function() {
         closeBtn.onclick = () => notification.remove();
         notification.appendChild(closeBtn);
         
-        // Add to body
         document.body.appendChild(notification);
         
-        // Auto remove after 5 seconds
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.style.animation = 'slideOutRight 0.3s ease';
@@ -406,59 +383,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
     
-    // Add animation styles
+    // ==================== ADD CSS ANIMATIONS ====================
     const style = document.createElement('style');
     style.textContent = `
         @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
-        
         @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
         }
-        
         @keyframes shrinkWidth {
-            from {
-                width: 100%;
-            }
-            to {
-                width: 0%;
-            }
+            from { width: 100%; }
+            to { width: 0%; }
         }
-        
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
         .notification {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 10000;
         }
-        
-        /* Responsive notifications */
         @media (max-width: 768px) {
             .notification {
                 top: 10px;
@@ -471,102 +420,67 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
     
-    // Update on window resize
-    window.addEventListener('resize', checkScreenSize);
+    // ==================== RESIZE HANDLER ====================
+    window.addEventListener('resize', function() {
+        checkScreenSize();
+        
+        // Reset mobile sidebar state on resize to desktop
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('mobile-active');
+            if (overlay) overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
     
-    // ==================== PAGE VIEW COUNTER ====================
+    // Initialize
+    checkScreenSize();
+    
+    // ==================== PAGE VIEW COUNTER (Optional) ====================
     async function trackPageView() {
         try {
             const currentPage = window.location.hash.replace('#', '') || 'home';
-            await fetch('http://localhost:5000/api/views/' + currentPage, {
-                method: 'POST'
-            });
+            await fetch('/api/views/' + currentPage, { method: 'POST' });
         } catch (error) {
             console.log('View tracking not available');
         }
     }
     trackPageView();
     
-    // ==================== LOAD PORTFOLIO PROJECTS FROM BACKEND ====================
-    async function loadPortfolioProjects() {
-        try {
-            const response = await fetch('http://localhost:5000/api/projects');
-            const result = await response.json();
-            
-            if (result.success && result.data.length > 0) {
-                const portfolioGrid = document.querySelector('.portfolio-grid');
-                if (portfolioGrid) {
-                    // Clear existing projects but keep the structure
-                    const existingItems = portfolioGrid.querySelectorAll('.portfolio-item');
-                    if (existingItems.length > 0 && result.data.length > 0) {
-                        // Optionally replace with dynamic content
-                        console.log('Projects loaded:', result.data.length);
-                    }
+    // ==================== VIDEO CONTROLS ====================
+    const portfolioVideos = document.querySelectorAll('.portfolio-item video');
+    if (portfolioVideos.length > 0) {
+        const videoObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.play().catch(e => console.log('Auto-play prevented:', e));
+                } else {
+                    entry.target.pause();
                 }
-            }
-        } catch (error) {
-            console.log('Portfolio loading not available - using static content');
-        }
+            });
+        }, { threshold: 0.5 });
+        
+        portfolioVideos.forEach(video => {
+            videoObserver.observe(video);
+        });
     }
-    loadPortfolioProjects();
 });
 
-// ==================== VIDEO CONTROLS ====================
+// ==================== VIDEO TOGGLE FUNCTION (Global) ====================
 function toggleVideo(portfolioItem) {
     const video = portfolioItem.querySelector('video');
     const icon = portfolioItem.querySelector('.video-control i');
     
     if (video.paused) {
         video.play();
-        icon.classList.remove('fa-play');
-        icon.classList.add('fa-pause');
+        if (icon) {
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+        }
     } else {
         video.pause();
-        icon.classList.remove('fa-pause');
-        icon.classList.add('fa-play');
-    }
-}
-
-// Auto-play videos when they come into view
-const portfolioVideos = document.querySelectorAll('.portfolio-item video');
-const videoObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.play();
-        } else {
-            entry.target.pause();
+        if (icon) {
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
         }
-    });
-}, { threshold: 0.5 });
-
-// Initialize video observer
-if (portfolioVideos.length > 0) {
-    portfolioVideos.forEach(video => {
-        videoObserver.observe(video);
-    });
-}
-
-// ==================== ADD SCROLL PROGRESS BAR ====================
-window.addEventListener('scroll', () => {
-    const winScroll = document.documentElement.scrollTop;
-    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    const scrolled = (winScroll / height) * 100;
-    
-    let progressBar = document.getElementById('scrollProgressBar');
-    if (!progressBar) {
-        progressBar = document.createElement('div');
-        progressBar.id = 'scrollProgressBar';
-        progressBar.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #4CAF50, #2196F3);
-            width: 0%;
-            z-index: 10001;
-            transition: width 0.1s;
-        `;
-        document.body.appendChild(progressBar);
     }
-    progressBar.style.width = scrolled + '%';
-});
+}
